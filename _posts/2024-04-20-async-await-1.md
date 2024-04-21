@@ -18,12 +18,10 @@ tags:
 ```cs
 async Task PrintNumberAsync()
 {
-    var result = 1;
-
     // '비동기적'으로 1초 대기한다.
     await Task.Delay(1000);
 
-    Console.WriteLine(result);
+    Console.WriteLine(5);
 }
 ```
 
@@ -47,15 +45,13 @@ async Task PrintNumberAsync()
 ```cs
 async Task PrintNumberAsync()
 {
-    var result = 1;
-
     // Task.Delay() 메서드는 비동기 작업으로, Task를 반환한다.
     var task = Task.Delay(1000);
     // 반환된 Task의 상태는 1초동안 Running 이고, 그 후 RanToCompletion으로 변한다.
     await task;
 
     // task가 완료되면 그 다음 코드가 이어서 실행된다.
-    Console.WriteLine(result);
+    Console.WriteLine(5);
 }
 ```
 
@@ -68,3 +64,32 @@ async Task PrintNumberAsync()
 
 > async void 비동기 메서드는 외부에서 호출만 가능하고 대기할 수 없으므로 무책임한 비동기 메서드이다.
     (WPF, WinForm, MAUI 등 GUI 프로그램에서 자동 생성되는 이벤트 핸들러를 제외하고, 직접 작성한 메서드는 반드시 Task를 반환하자.)
+
+### Task가 성공하지 못한 경우
+- 비동기 작업이 성공하면 좋겠지만 예외가 발생하면 어떻게 될까? 또는 비동기 작업은 실행 중 취소될 수도 있다.
+    - .NET에서 실행에 50ms 이상 걸릴 가능성이 있는 메서드의 경우 비동기 메서드로 선언한다.
+- Task의 상태는 Canceled, Faulted인 채로 완료되며 await으로 대기한 곳에서 예외를 발생시킨다.
+
+- 정리하자면 await으로 대기한 비동기 작업에서 예외가 발생한 경우, 동기 메서드와 동일하게 try-catch 로 처리하면 된다. 
+- 예시에서 예외를 발생시켜보자.
+    - Task.Delay는 취소를 지원하고, 범위에 벗어난 인자 전달 시 ArgumentOutOfRangeException 예외를 발생시킨다.
+
+```cs
+async Task PrintNumberAsync(CancellationToken token)
+{
+    try
+    {
+        await Task.Delay(-1, token);
+
+        Console.WriteLine(5);
+    }
+    catch (OperationCanceledException)
+    {
+        // 취소 시 예외 처리 
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+        // Task.Delay() 예외 처리
+    }
+}
+```
